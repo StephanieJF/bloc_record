@@ -1,7 +1,11 @@
 require 'sqlite3'
 
 module Selection
+
 	def find(*ids)
+		unless ids > 0 || ids.is_a?(Integer)
+			puts "Error: id must be an integer greater than 0"
+		end
 
   	if ids.length == 1
     	find_one(ids.first)
@@ -17,6 +21,11 @@ module Selection
 
 
 	def find_one(id)
+		unless id > 0 || id.is_a?(Integer)
+			"Error: id must be an integer greater than 0"
+			return
+		end
+
 		row = connection.get_first_row <<-SQL
 			SELECT #{columns.join ","} FROM #{table}
 			WHERE id = #{id};
@@ -35,7 +44,8 @@ module Selection
   end
 
 	def take(num=1)
-    if num > 1
+		if num.is_a?(integer) && num >0
+			if num > 1
       rows = connection.execute <<-SQL
         SELECT #{columns.join ","} FROM #{table}
         ORDER BY random()
@@ -43,9 +53,12 @@ module Selection
       SQL
 
       rows_to_array(rows)
-    else
-      take_one
-    end
+    	else
+      	take_one
+    	end
+		else
+			puts "You must enter a number greater than 0"
+		end
   end
 
 	def take_one
