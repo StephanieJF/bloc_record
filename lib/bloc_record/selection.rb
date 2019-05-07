@@ -97,13 +97,13 @@ module Selection
     rows_to_array(rows)
   end
 
-	def method_missing(m, *args, &block)
-		if m.to_s =~ /^find_by_(.*)$/
-			find_by_($1.to_sym => *args.first)
-		else
-			super
-		end
-	end
+	# def method_missing(m, *args, &block)
+	# 	if m.to_s =~ /^find_by_(.*)$/
+	# 		find_by_($1.to_sym => args.first)
+	# 	else
+	# 		super
+	# 	end
+	# end
 
 	private
 
