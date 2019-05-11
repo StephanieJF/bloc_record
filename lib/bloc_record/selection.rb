@@ -1,4 +1,5 @@
 require 'sqlite3'
+require_relative 'schema'
 
 module Selection
 
@@ -97,13 +98,40 @@ module Selection
     rows_to_array(rows)
   end
 
-	# def method_missing(m, *args, &block)
-	# 	if m.to_s =~ /^find_by_(.*)$/
-	# 		find_by_($1.to_sym => args.first)
-	# 	else
-	# 		super
-	# 	end
-	# end
+	def method_missing(m, *args, &block)
+    s = m.split('_')[2, m.length - 1].join("_").to_sym
+    find_by(s, args)
+  end
+
+	def find_each(attribute, value, batch_size=10)
+    rows = connection.execute <<-SQL
+      SELECT #{columns.join ","} FROM #{table}
+      WHERE #{attribute} = #{BlocRecord::Utility.sql_strings(value)}
+			LIMIT #{batch_size};
+    SQL
+
+    yield(rows_to_array(rows))
+  end
+
+	def batch_size(offset=0, batch_size=10)
+		rows = connection.execute <<-SQL
+			SELECT #{columns.join ","}, total=COUNT(*)
+			FROM #{table};
+			ORDER BY id ASC
+			OFFSET #{offset} ROWS
+			FETCH NEXT #{batch_size} ROWS ONLY;
+		SQL
+
+		yield (rows_to_array(rows))
+
+		offset=offset+batch_size
+		remaining=total-offset
+		if remaining < 10
+			find_each(offset, remaining)
+		else
+			find_each(offset, batch_size)
+		end
+	end
 
 	private
 
