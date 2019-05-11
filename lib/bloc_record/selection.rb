@@ -1,5 +1,4 @@
 require 'sqlite3'
-require_relative 'schema'
 
 module Selection
 
