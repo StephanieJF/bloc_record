@@ -3,13 +3,13 @@ require 'sqlite3'
 module Selection
 
 	def find(*ids)
-		unless ids > 0 || ids.is_a?(Integer)
-			puts "Error: id must be an integer greater than 0"
-		end
 
   	if ids.length == 1
     	find_one(ids.first)
    	else
+			ids.each do |id|
+				id_validation(id)
+			end
      	rows = connection.execute <<-SQL
        	SELECT #{columns.join ","} FROM #{table}
        	WHERE id IN (#{ids.join(",")});
@@ -21,10 +21,7 @@ module Selection
 
 
 	def find_one(id)
-		unless id > 0 || id.is_a?(Integer)
-			"Error: id must be an integer greater than 0"
-			return
-		end
+		id_validation(id)
 
 		row = connection.get_first_row <<-SQL
 			SELECT #{columns.join ","} FROM #{table}
@@ -44,7 +41,7 @@ module Selection
   end
 
 	def take(num=1)
-		if num.is_a?(integer) && num >0
+		id_validation(num)
 			if num > 1
       rows = connection.execute <<-SQL
         SELECT #{columns.join ","} FROM #{table}
@@ -102,6 +99,7 @@ module Selection
     find_by(s, args)
   end
 
+#find_each method with optional batch_size support
 	def find_each(attribute, value, batch_size=10)
     rows = connection.execute <<-SQL
       SELECT #{columns.join ","} FROM #{table}
@@ -109,10 +107,12 @@ module Selection
 			LIMIT #{batch_size};
     SQL
 
-    yield(rows_to_array(rows))
+		rows.each do |row|
+			yield(rows_to_array(row))
+		end
   end
 
-	def batch_size(offset=0, batch_size=10)
+	def find_in_batches(offset=0, batch_size=10)
 		rows = connection.execute <<-SQL
 			SELECT #{columns.join ","}, total=COUNT(*)
 			FROM #{table};
@@ -126,9 +126,9 @@ module Selection
 		offset=offset+batch_size
 		remaining=total-offset
 		if remaining < 10
-			find_each(offset, remaining)
+			find_in_batches(offset, remaining)
 		else
-			find_each(offset, batch_size)
+			find_in_batches(offset, batch_size)
 		end
 	end
 
@@ -144,4 +144,10 @@ module Selection
 	def rows_to_array(rows)
      rows.map { |row| new(Hash[columns.zip(row)]) }
   end
-end
+
+	def id_validation(id)
+		unless id > 0 || id.is_a?(Integer)
+			"Error: id must be an integer greater than 0"
+			return
+		end
+	end
