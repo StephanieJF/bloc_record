@@ -154,18 +154,32 @@ module Selection
 	end
 
 	def order(*args)
-		if args.count > 1
-			order = args.join(",")
-		else
-			order = args.first.to_s
-		end
+  	args.map! do |arg|
+    	if arg.class == Hash
+      	args_hash = convert_keys(arg)
+      	args_hash.map {|key, value| "#{key}" " #{value}"}
+    	elsif arg.class == Symbol
+      	arg.to_s
+    	else
+      	arg
+    	end
+  	end
+  	order = args.join(', ')
+  	uppercase = {
+			"asc" => "ASC",
+			"desc" => "DESC" }
+
+  	order.gsub!(/\w+/) do |word|
+    	uppercase.fetch(word,word)
+  	end
 
 		rows = connection.execute <<-SQL
-			SELECT * FROM #{table}
-			ORDER BY #{order};
-		SQL
-		rows_to_array(rows)
-	end
+  		SELECT * FROM #{table}
+    	ORDER BY #{order};
+  	SQL
+
+  	rows_to_array(rows)
+  end
 
 	def join(*args)
 		if args.count > 1
@@ -176,6 +190,11 @@ module Selection
 		else
 			case args.first
 			when String
+				rows = connection.execute <<-SQL
+					SELECT * FROM #{table}
+					INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
+				SQL
+			when Symbol
 				rows = connection.execute <<-SQL
 					SELECT * FROM #{table}
 					INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
