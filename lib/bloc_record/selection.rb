@@ -156,7 +156,7 @@ module Selection
 	def order(*args)
 		args.map! do |arg|
 			if arg.class == Hash
-				args_hash = convert_keys(arg)
+				args_hash = BlocRecord::Utility.convert_keys(arg)
 				args_hash.map {|key, value| "#{key}" " #{value}"}
 			elsif arg.class == Symbol
 				arg.to_s
@@ -201,7 +201,7 @@ module Selection
 					INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
 				SQL
 			when Hash
-				arg_hash = convert_keys(args.first)
+				arg_hash = BlocRecord::Utility.convert_keys(args.first)
 				association_join = arg_hash.map {|key, value| "INNER JOIN #{key} ON #{key}.#{table}_id = #{table}.id
 				INNER JOIN #{value} ON #{value}.#{key}_id = #{key}.id"}.join("")
 				rows = connection.execute <<-SQL
@@ -223,7 +223,9 @@ module Selection
   end
 
   def rows_to_array(rows)
-    rows.map { |row| new(Hash[columns.zip(row)]) }
+    collection = BlocRecord::Collection.new
+		rows.each { |row| collection << new(Hash[columns.zip(row)]) }
+		collection
   end
 
   def id_validation(id)
