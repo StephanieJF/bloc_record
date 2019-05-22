@@ -82,5 +82,10 @@ module Persistence
 		def update_all(updates)
 			update(nil, updates)
 		end
+
+		def method_missing(m, *args, &block)
+			s = m.split('_')[1, m.length-1].join("_").to_sym
+			update_attribute(s, args)
+		end
 	end
 end
