@@ -1,4 +1,5 @@
 require 'sqlite3'
+require 'pg'
 require 'active_support/inflector'
 
 module Associations
@@ -25,7 +26,7 @@ module Associations
 			association_name = association.to_s
 			row = self.class.connection.get_first_row <<- SQL
 				SELECT * FROM #{association_name}
-				WHERE id = #{self.class.table}_id = #{self.id}
+				WHERE id = #{self.send(association_name + "_id")}
 			SQL
 
 			class_name = association_name.classify.constantize
